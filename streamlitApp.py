@@ -260,7 +260,7 @@ def load_data():
     # I'm using a relative path so the script works on any computer,
     # not just my own laptop. The CSV just needs to be in the same folder.
     try:
-        df = pd.read_csv(r"C:\Users\DELL\Desktop\Uni25-26\Project\work\DATA\processedData\finalData.csv")
+        df = pd.read_csv("finalData.csv")
     except FileNotFoundError:
         st.error("Could not find finalData.csv - make sure it is in the same folder as this script.")
         return pd.DataFrame()   # return an empty dataframe so the app doesn't crash
