@@ -10,7 +10,7 @@ This project was developed as a Final Year Computer Science Project to address t
 * **Smart Grouping UI:** Automatically aggregates data into clean trendlines if a user selects too many Hospital Trusts, preventing visual clutter ("hairball" charts).
 * **Accessible Design:** Custom CSS forces strict adherence to NHS Digital Service Manual accessibility standards (WCAG 2.1 AA), prioritizing high-contrast typography and colour-blind friendly visualizations.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Language:** Python
 * **Frontend:** Streamlit, Altair, HTML/CSS
@@ -24,11 +24,4 @@ This project was developed as a Final Year Computer Science Project to address t
 * `ModelTraining.ipynb`: The research notebook where hyperparameter tuning, ACF correlograms, and algorithmic testing were conducted.
 * `finalData.csv`: The aggregated, clean dataset used to power the dashboard.
 
-## 🚀 Installation & Setup
 
-To run this dashboard locally on your machine, follow these steps:
-
-**1. Clone the repository:**
-```bash
-git clone [https://github.com/YourUsername/Your-Repo-Name.git](https://github.com/YourUsername/Your-Repo-Name.git)
-cd Your-Repo-Name
