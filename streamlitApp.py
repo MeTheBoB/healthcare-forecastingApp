@@ -367,7 +367,7 @@ def render_sidebar(df):
         # Place the Run and Clear buttons side by side
         btn_col1, btn_col2 = st.columns(2)
         with btn_col1:
-            if st.button("Run AI Forecast", type="primary", use_container_width=True):
+            if st.button("Run ML Forecast", type="primary", use_container_width=True):
                 st.session_state.show_forecast = True
         with btn_col2:
             if st.button("Clear Forecast", use_container_width=True):
@@ -677,7 +677,7 @@ def render_historical_charts(df):
         if ">4h decision to admit" in df.columns:
             st.markdown("")
             with st.container(border=True):
-                st.markdown("### Trolley Waits — Decision to Admit")
+                st.markdown("### Trolley Waits -Decision to Admit")
 
                 trolley_data = df.groupby("MonthYear", as_index=False)[
                     [">4h decision to admit", ">12h decision to admit"]
@@ -787,7 +787,7 @@ def render_historical_charts(df):
         col_p1, col_p2 = st.columns([3, 2])
 
         with col_p1.container(border=True):
-            st.markdown("### Emergency Admissions — via A&E vs Other")
+            st.markdown("### Emergency Admissions - via A&E vs Other")
 
             if "Other Emergency admissions (i.e not via A&E)" in df.columns:
                 pathway_data = df.groupby("MonthYear", as_index=False).agg(
@@ -896,7 +896,7 @@ def run_and_render_forecasts(df, horizon):
     model_type = "SARIMA" if horizon <= 3 else "Prophet"
 
     # Show a loading spinner so the user knows the computer is doing math
-    with st.spinner(f"Training {model_type} model — this may take a moment..."):
+    with st.spinner(f"Training {model_type} model - this may take a moment..."):
 
         if model_type == "SARIMA":
             # Set up the data for SARIMA
@@ -972,13 +972,13 @@ def run_and_render_forecasts(df, horizon):
     m1, m2, m3, m4 = st.columns(4)
 
     with m1.container(border=True):
-        st.metric(label="MAPE — % Error", value=f"{mape:.2f}%")
+        st.metric(label="MAPE - % Error", value=f"{mape:.2f}%")
     with m2.container(border=True):
-        st.metric(label="MAE — Avg Patient Error", value=f"{mae:,.0f}")
+        st.metric(label="MAE - Avg Patient Error", value=f"{mae:,.0f}")
     with m3.container(border=True):
-        st.metric(label="RMSE — Penalty Error", value=f"{rmse:,.0f}")
+        st.metric(label="RMSE - Penalty Error", value=f"{rmse:,.0f}")
     with m4.container(border=True):
-        st.metric(label="MSE — Squared Error", value=f"{mse:,.0f}")
+        st.metric(label="MSE - Squared Error", value=f"{mse:,.0f}")
 
     # Add an expander so the user can read what the errors mean
     with st.expander("What do these metrics mean?"):
@@ -1005,7 +1005,7 @@ def run_and_render_forecasts(df, horizon):
     fc_col1, fc_col2 = st.columns([3, 1])
 
     with fc_col1.container(border=True):
-        st.markdown(f"### Attendance Forecast — {model_type} ({horizon} months ahead)")
+        st.markdown(f"### Attendance Forecast - {model_type} ({horizon} months ahead)")
 
         forecast_chart = (
             alt.Chart(combined_plot)
