@@ -128,6 +128,22 @@ h3 {{
     background: {NHS_BLUE} !important;
 }}
 
+/* Small Clear buttons next to the region and trust filters in the sidebar */
+[data-testid="stSidebar"] div.stButton > button[kind="secondary"] {{
+    background: #FFFFFF !important;
+    border: 1px solid #FFFFFF !important;
+    color: {NHS_BLUE} !important;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    padding: 0.25rem 0.5rem !important;
+    margin-top: 20px !important;
+}}
+[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover {{
+    background: {NHS_LIGHT} !important;
+    border-color: {NHS_LIGHT} !important;
+}}
+
 /* Change the main AI Forecast button to NHS Blue */
 div.stButton > button[kind="primary"] {{
     background: {NHS_BLUE} !important;
@@ -203,7 +219,7 @@ def setup_page():
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv("finalData.csv")
+        df = pd.read_csv(r"C:\Users\DELL\Desktop\Uni25-26\Project\work\DATA\processedData\finalData.csv")
     except FileNotFoundError:
         st.error(r"C:\Users\DELL\Desktop\Uni25-26\Project\work\DATA\processedData\finalData.csv not found. Make sure the file exists at this path.")
         return pd.DataFrame()
@@ -302,17 +318,34 @@ def render_sidebar(df):
 
         st.markdown("**Geography**")
 
-        # Region dropdown
+        # --- Region filter with a Clear button beside it ---
+        # I use session_state keys to let the Clear buttons reset the multiselects
+        reg_col, reg_btn = st.columns([3, 1])
+        with reg_col:
+            st.markdown("<p style='color:rgba(255,255,255,0.85);font-size:0.85rem;margin-bottom:4px'>Region</p>", unsafe_allow_html=True)
+        with reg_btn:
+            if st.button("Clear", key="clear_regions", use_container_width=True):
+                st.session_state["regions_selection"] = ["All Regions"]
+
         region_options = ["All Regions"] + sorted(df["Region"].dropna().unique().tolist())
         selected_regions = st.multiselect(
             "Regions",
             options=region_options,
             default=["All Regions"],
+            key="regions_selection",
             label_visibility="collapsed"
         )
 
         if "All Regions" not in selected_regions and len(selected_regions) > 0:
             df = df[df["Region"].isin(selected_regions)]
+
+        # --- Trust filter with a title label and a Clear button beside it ---
+        trust_col, trust_btn = st.columns([3, 1])
+        with trust_col:
+            st.markdown("<p style='color:rgba(255,255,255,0.85);font-size:0.85rem;margin-bottom:4px'>Trust</p>", unsafe_allow_html=True)
+        with trust_btn:
+            if st.button("Clear", key="clear_trusts", use_container_width=True):
+                st.session_state["trusts_selection"] = ["All Trusts"]
 
         # Hospital Trust dropdown (updates dynamically based on the region chosen above)
         trust_options = ["All Trusts"] + sorted(df["Organization"].dropna().unique().tolist())
@@ -320,6 +353,7 @@ def render_sidebar(df):
             "Trusts",
             options=trust_options,
             default=["All Trusts"],
+            key="trusts_selection",
             label_visibility="collapsed"
         )
 
@@ -350,12 +384,12 @@ def render_sidebar(df):
 
         st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:16px 0'>", unsafe_allow_html=True)
 
-        # Buttons for the AI Forecast
-        st.markdown("**AI Forecast**")
-        forecast_options = [3, 4, 5, 6, 9, 12, 24]
+        # Dropdown for the AI Forecast horizon
+        # I switched from pills to a selectbox so all 12 options fit neatly
+        st.markdown("**ML Forecast**")
         forecast_horizon = st.pills(
             "Horizon (months)",
-            options=forecast_options,
+            options=[1, 2, 3, 4, 5, 6, 9],
             default=6,
             label_visibility="collapsed"
         )
