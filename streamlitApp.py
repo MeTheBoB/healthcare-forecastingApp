@@ -219,7 +219,7 @@ def setup_page():
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv(r"C:\Users\DELL\Desktop\Uni25-26\Project\work\DATA\processedData\finalData.csv")
+        df = pd.read_csv("finalData.csv")
     except FileNotFoundError:
         st.error(r"C:\Users\DELL\Desktop\Uni25-26\Project\work\DATA\processedData\finalData.csv not found. Make sure the file exists at this path.")
         return pd.DataFrame()
