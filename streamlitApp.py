@@ -6,7 +6,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import altMLr as alt
+import altair as alt
 from prophet import Prophet
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -34,14 +34,14 @@ CUSTOM_CSS = f"""
 /* Import nice fonts for the text and headings */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap');
 
-/* Set the mMLn background to a light grey so the white cards stand out */
+/* Set the main background to a light grey so the white cards stand out */
 .stApp {{
     background: #F4F6F9;
     font-family: 'DM Sans', sans-serif;
 }}
 
 /* Make the dashboard wider and add some space at the top */
-.block-contMLner {{
+.block-container {{
     padding-top: 2rem !important;
     max-width: 1400px !important;
 }}
@@ -65,7 +65,7 @@ CUSTOM_CSS = f"""
     margin: 0 !important;
 }}
 
-/* Style the white boxes (contMLners) around the charts and KPIs */
+/* Style the white boxes (containers) around the charts and KPIs */
 [data-testid="stVerticalBlockBorderWrapper"] > div {{
     background: #FFFFFF;
     border-radius: 12px !important;
@@ -92,7 +92,7 @@ CUSTOM_CSS = f"""
     white-space: normal !important;
 }}
 
-/* Fix Tab Titles (ContMLner Pages) to be visible and slightly larger */
+/* Fix Tab Titles (Container Pages) to be visible and slightly larger */
 button[data-baseweb="tab"] p {{
     color: #000000 !important; /* Make text black so it's visible */
     font-weight: 700 !important;
@@ -144,7 +144,7 @@ h3 {{
     border-color: {NHS_LIGHT} !important;
 }}
 
-/* Change the mMLn ML Forecast button to NHS Blue */
+/* Change the main ML Forecast button to NHS Blue */
 div.stButton > button[kind="primary"] {{
     background: {NHS_BLUE} !important;
     border: none !important;
@@ -204,7 +204,7 @@ div[data-testid="stSlider"] div[role="slider"] {{
 </style>
 """
 
-# Set up the mMLn page layout and inject the CSS above
+# Set up the main page layout and inject the CSS above
 def setup_page():
     st.set_page_config(
         layout="wide",
@@ -215,7 +215,7 @@ def setup_page():
 
 
 # Load the data and clean it up.
-# Using @st.cache_data means Streamlit only reads the  once, making the app much faster.
+# Using @st.cache_data means Streamlit only reads the file once, making the app much faster.
 @st.cache_data
 def load_data():
     try:
@@ -250,51 +250,56 @@ def style_chart(chart):
         chart
         .configure(background="white")
         .configure_legend(labelColor="#333", titleColor="#333", labelFontSize=12)
-        .configure_axis(labelColor="#555", titleColor="#555", gridColor="#EEF2F5", domMLnColor="#DDE3E9")
+        .configure_axis(labelColor="#555", titleColor="#555", gridColor="#EEF2F5", domainColor="#DDE3E9")
         .configure_view(strokeWidth=0)
     )
 
 
 # Function to draw shaded background boxes on charts to show when COVID happened
 def get_covid_bands(df):
-    # Safety check: if we don't have this column, just return nothing so the app doesn't crash
-    if "CovidPeriod" not in df.columns:
-        return alt.layer()
+    # Bulletproof safety check: If anything goes wrong, just return an empty layer to prevent crashes
+    try:
+        if "CovidPeriod" not in df.columns:
+            return alt.layer()
 
-    # Find the start and end dates for each COVID period
-    period_ranges = (
-        df.groupby("CovidPeriod")["MonthYear"]
-        .agg(["min", "max"])
-        .reset_index()
-        .rename(columns={"CovidPeriod": "period", "min": "start", "max": "end"})
-    )
-
-    colour_map = {
-        "Pre-COVID":    "#A8C5E0",
-        "During COVID": "#FFD580",
-        "Post-COVID":   "#A8D8B0"
-    }
-
-    # Draw a rectangle for each period
-    bands = []
-    for _, row in period_ranges.iterrows():
-        colour = colour_map.get(row["period"], "#CCCCCC")
-        band_data = pd.DataFrame({
-            "start":  [row["start"]],
-            "end":    [row["end"]],
-            "period": [row["period"]]
-        })
-        band = (
-            alt.Chart(band_data)
-            .mark_rect(opacity=0.12, color=colour)
-            .encode(
-                x=alt.X("start:T"),
-                x2=alt.X2("end:T")
-            )
+        # Find the start and end dates for each COVID period
+        period_ranges = (
+            df.groupby("CovidPeriod")["MonthYear"]
+            .agg(["min", "max"])
+            .reset_index()
+            .rename(columns={"CovidPeriod": "period", "min": "start", "max": "end"})
         )
-        bands.append(band)
 
-    return alt.layer(*bands)
+        colour_map = {
+            "Pre-COVID":    "#A8C5E0",
+            "During COVID": "#FFD580",
+            "Post-COVID":   "#A8D8B0"
+        }
+
+        # Draw a rectangle for each period
+        bands = []
+        for _, row in period_ranges.iterrows():
+            colour = colour_map.get(row["period"], "#CCCCCC")
+            band_data = pd.DataFrame({
+                "start":  [row["start"]],
+                "end":    [row["end"]],
+                "period": [row["period"]]
+            })
+            band = (
+                alt.Chart(band_data)
+                .mark_rect(opacity=0.12, color=colour)
+                .encode(
+                    x=alt.X("start:T"),
+                    x2=alt.X2("end:T")
+                )
+            )
+            bands.append(band)
+
+        return alt.layer(*bands)
+        
+    except Exception:
+        # If any Pandas KeyError happens, safely ignore it
+        return alt.layer()
 
 
 # Build the side panel where the user selects their filters
@@ -324,7 +329,7 @@ def render_sidebar(df):
         with reg_col:
             st.markdown("<p style='color:rgba(255,255,255,0.85);font-size:0.85rem;margin-bottom:4px'>Region</p>", unsafe_allow_html=True)
         with reg_btn:
-            if st.button("Clear", key="clear_regions", use_contMLner_width=True):
+            if st.button("Clear", key="clear_regions", use_container_width=True):
                 st.session_state["regions_selection"] = ["All Regions"]
 
         region_options = ["All Regions"] + sorted(df["Region"].dropna().unique().tolist())
@@ -344,7 +349,7 @@ def render_sidebar(df):
         with trust_col:
             st.markdown("<p style='color:rgba(255,255,255,0.85);font-size:0.85rem;margin-bottom:4px'>Trust</p>", unsafe_allow_html=True)
         with trust_btn:
-            if st.button("Clear", key="clear_trusts", use_contMLner_width=True):
+            if st.button("Clear", key="clear_trusts", use_container_width=True):
                 st.session_state["trusts_selection"] = ["All Trusts"]
 
         # Hospital Trust dropdown (updates dynamically based on the region chosen above)
@@ -401,13 +406,13 @@ def render_sidebar(df):
         # Place the Run and Clear buttons side by side
         btn_col1, btn_col2 = st.columns(2)
         with btn_col1:
-            if st.button("Run ML Forecast", type="primary", use_contMLner_width=True):
+            if st.button("Run ML Forecast", type="primary", use_container_width=True):
                 st.session_state.show_forecast = True
         with btn_col2:
-            if st.button("Clear Forecast", use_contMLner_width=True):
+            if st.button("Clear Forecast", use_container_width=True):
                 st.session_state.show_forecast = False
                 
-        # Grab the memory state to return to the mMLn function
+        # Grab the memory state to return to the main function
         run_forecast = st.session_state.show_forecast
 
         # Show a small summary text of how much data is selected
@@ -427,7 +432,7 @@ def render_sidebar(df):
 # Draw the big numbers (KPIs) at the top of the screen
 def render_kpis(df):
     if df.empty:
-        st.info("No data avMLlable for the selected filters.")
+        st.info("No data available for the selected filters.")
         return
 
     # Calculate total patients
@@ -441,23 +446,23 @@ def render_kpis(df):
     else:
         four_hour_pct = 0
 
-    # Calculate patients wMLting on trolleys for beds
+    # Calculate patients waiting on trolleys for beds
     over_4h  = int(df[">4h decision to admit"].sum())  if ">4h decision to admit"  in df.columns else None
     over_12h = int(df[">12h decision to admit"].sum()) if ">12h decision to admit" in df.columns else None
     other_admissions = int(df["Other Emergency admissions (i.e not via A&E)"].sum()) if "Other Emergency admissions (i.e not via A&E)" in df.columns else None
 
-    # Decide how many columns we need based on what data is avMLlable
+    # Decide how many columns we need based on what data is available
     num_cols = 6 if over_12h is not None else 3
     cols = st.columns(num_cols)
 
-    with cols[0].contMLner(border=True):
+    with cols[0].container(border=True):
         st.metric(label="Total Attendances", value=f"{total_attendances:,}")
 
-    with cols[1].contMLner(border=True):
+    with cols[1].container(border=True):
         st.metric(label="Emergency Admissions", value=f"{total_admissions:,}")
 
-    with cols[2].contMLner(border=True):
-        # Add logic to show if they passed or fMLled the 78% NHS target
+    with cols[2].container(border=True):
+        # Add logic to show if they passed or failed the 78% NHS target
         if four_hour_pct >= 78:
             delta_text   = "Above 78% target"
             delta_colour = "normal"
@@ -473,22 +478,22 @@ def render_kpis(df):
         )
 
     if over_4h is not None:
-        with cols[3].contMLner(border=True):
+        with cols[3].container(border=True):
             st.metric(label=">4h Decision to Admit", value=f"{over_4h:,}")
 
     if over_12h is not None:
-        with cols[4].contMLner(border=True):
+        with cols[4].container(border=True):
             st.metric(label=">12h Decision to Admit", value=f"{over_12h:,}")
 
     if other_admissions is not None:
-        with cols[5].contMLner(border=True):
+        with cols[5].container(border=True):
             st.metric(label="Non-A&E Admissions", value=f"{other_admissions:,}")
 
 
 # Draw the historical charts organised neatly into 4 tabs
 def render_historical_charts(df):
     if df.empty:
-        st.info("No data avMLlable.")
+        st.info("No data available.")
         return
 
     tab1, tab2, tab3, tab4 = st.tabs([
@@ -502,12 +507,12 @@ def render_historical_charts(df):
     with tab1:
         col_left, col_right = st.columns([3, 1])
 
-        with col_left.contMLner(border=True):
+        with col_left.container(border=True):
             st.markdown("### Monthly A&E Attendances")
             num_trusts = df["Organization"].nunique()
 
             # Smart grouping: if too many trusts are selected, combine them into one line
-            # so the chart doesn't look like a messy hMLrball.
+            # so the chart doesn't look like a messy hairball.
             if num_trusts > 5:
                 st.info(
                     f"Smart Grouping Active: {num_trusts} trusts are selected. "
@@ -568,13 +573,13 @@ def render_historical_charts(df):
                 )
                 att_chart = style_chart((get_covid_bands(df) + line_chart).properties(height=500).interactive())
 
-            st.altMLr_chart(att_chart, use_contMLner_width=True, theme=None)
+            st.altair_chart(att_chart, use_container_width=True, theme=None)
 
             if "CovidPeriod" in df.columns:
                 st.caption("Pre-COVID | During COVID | Post-COVID (shaded background bands)")
 
         # Donut chart showing the different types of A&E departments
-        with col_right.contMLner(border=True):
+        with col_right.container(border=True):
             st.markdown("### Department Mix")
 
             type_data = pd.DataFrame({
@@ -591,7 +596,7 @@ def render_historical_charts(df):
                 color=alt.Color(
                     "Type:N",
                     scale=alt.Scale(
-                        domMLn=type_data["Type"].tolist(),
+                        domain=type_data["Type"].tolist(),
                         range=[NHS_BLUE, NHS_YELLOW, NHS_GREEN]
                     ),
                     legend=alt.Legend(orient="bottom", title=None, labelLimit=200)
@@ -610,14 +615,14 @@ def render_historical_charts(df):
                 text=alt.Text("Pct:Q", format=".0%")
             )
 
-            st.altMLr_chart(style_chart((arc + label).properties(height=500)), use_contMLner_width=True, theme=None)
+            st.altair_chart(style_chart((arc + label).properties(height=500)), use_container_width=True, theme=None)
 
 
-    # Tab 2: 4-Hour wMLt times and performance
+    # Tab 2: 4-Hour wait times and performance
     with tab2:
         col_a, col_b = st.columns(2)
 
-        with col_a.contMLner(border=True):
+        with col_a.container(border=True):
             st.markdown("### Attendances vs 4-Hour Target")
 
             bar_data = df.groupby("MonthYear", as_index=False)[
@@ -640,7 +645,7 @@ def render_historical_charts(df):
                     color=alt.Color(
                         "Category:N",
                         scale=alt.Scale(
-                            domMLn=["Within 4h", "Breached 4h"],
+                            domain=["Within 4h", "Breached 4h"],
                             range=[NHS_BLUE, NHS_YELLOW]
                         ),
                         legend=alt.Legend(orient="bottom", title=None)
@@ -655,9 +660,9 @@ def render_historical_charts(df):
                 .interactive()
             )
 
-            st.altMLr_chart(style_chart(bar_chart), use_contMLner_width=True, theme=None)
+            st.altair_chart(style_chart(bar_chart), use_container_width=True, theme=None)
 
-        with col_b.contMLner(border=True):
+        with col_b.container(border=True):
             st.markdown("### Type 1 Performance Over Time")
 
             if "Type1_Under4h_%" in df.columns:
@@ -671,7 +676,7 @@ def render_historical_charts(df):
                         y=alt.Y(
                             "Type1_Under4h_%:Q",
                             title="% Within 4h",
-                            scale=alt.Scale(domMLn=[60, 100])
+                            scale=alt.Scale(domain=[60, 100])
                         ),
                         tooltip=[
                             alt.Tooltip("MonthYear:T", format="%b %Y"),
@@ -702,16 +707,16 @@ def render_historical_charts(df):
                 )
 
                 combined = (perf_line + target_line + target_label).properties(height=340).interactive()
-                st.altMLr_chart(style_chart(combined), use_contMLner_width=True, theme=None)
+                st.altair_chart(style_chart(combined), use_container_width=True, theme=None)
                 st.caption("Dashed line = 78% NHS England target for 2025/26")
             else:
                 st.info("Type 1 performance column not found in the data.")
 
-        # Area chart showing patients wMLting on trolleys for beds
+        # Area chart showing patients waiting on trolleys for beds
         if ">4h decision to admit" in df.columns:
             st.markdown("")
-            with st.contMLner(border=True):
-                st.markdown("### Trolley WMLts -Decision to Admit")
+            with st.container(border=True):
+                st.markdown("### Trolley Waits - Decision to Admit")
 
                 trolley_data = df.groupby("MonthYear", as_index=False)[
                     [">4h decision to admit", ">12h decision to admit"]
@@ -719,7 +724,7 @@ def render_historical_charts(df):
 
                 trolley_melted = trolley_data.melt(
                     id_vars="MonthYear",
-                    var_name="WMLt Category",
+                    var_name="Wait Category",
                     value_name="Patients"
                 )
 
@@ -730,16 +735,16 @@ def render_historical_charts(df):
                         x=alt.X("MonthYear:T", title=None),
                         y=alt.Y("Patients:Q", title="Patients", axis=alt.Axis(format="~s")),
                         color=alt.Color(
-                            "WMLt Category:N",
+                            "Wait Category:N",
                             scale=alt.Scale(
-                                domMLn=[">4h decision to admit", ">12h decision to admit"],
+                                domain=[">4h decision to admit", ">12h decision to admit"],
                                 range=[NHS_YELLOW, NHS_RED]
                             ),
                             legend=alt.Legend(orient="bottom", title=None)
                         ),
                         tooltip=[
                             alt.Tooltip("MonthYear:T", format="%b %Y"),
-                            alt.Tooltip("WMLt Category:N"),
+                            alt.Tooltip("Wait Category:N"),
                             alt.Tooltip("Patients:Q", format=",.0f")
                         ]
                     )
@@ -747,14 +752,14 @@ def render_historical_charts(df):
                     .interactive()
                 )
 
-                st.altMLr_chart(style_chart(trolley_chart), use_contMLner_width=True, theme=None)
-                st.caption("Trolley wMLts measure how many patients wMLted over 4h or 12h for a bed.")
+                st.altair_chart(style_chart(trolley_chart), use_container_width=True, theme=None)
+                st.caption("Trolley waits measure how many patients waited over 4h or 12h for a bed.")
 
-    # Tab 3: Compare different regions agMLnst each other
+    # Tab 3: Compare different regions against each other
     with tab3:
         col_r1, col_r2 = st.columns(2)
 
-        with col_r1.contMLner(border=True):
+        with col_r1.container(border=True):
             st.markdown("### Attendances by Region")
 
             region_totals = (
@@ -776,9 +781,9 @@ def render_historical_charts(df):
                 )
                 .properties(height=360)
             )
-            st.altMLr_chart(style_chart(region_bar), use_contMLner_width=True, theme=None)
+            st.altair_chart(style_chart(region_bar), use_container_width=True, theme=None)
 
-        with col_r2.contMLner(border=True):
+        with col_r2.container(border=True):
             st.markdown("### 4-Hour Performance by Region")
 
             region_perf = (
@@ -820,7 +825,7 @@ def render_historical_charts(df):
     with tab4:
         col_p1, col_p2 = st.columns([3, 2])
 
-        with col_p1.contMLner(border=True):
+        with col_p1.container(border=True):
             st.markdown("### Emergency Admissions - via A&E vs Other")
 
             if "Other Emergency admissions (i.e not via A&E)" in df.columns:
@@ -845,7 +850,7 @@ def render_historical_charts(df):
                         color=alt.Color(
                             "Pathway:N",
                             scale=alt.Scale(
-                                domMLn=["Via A&E", "Other"],
+                                domain=["Via A&E", "Other"],
                                 range=[NHS_BLUE, NHS_GREEN]
                             ),
                             legend=alt.Legend(orient="bottom", title=None)
@@ -860,9 +865,9 @@ def render_historical_charts(df):
                     .properties(height=500)
                     .interactive()
                 )
-                st.altMLr_chart(style_chart(pathway_chart), use_contMLner_width=True, theme=None)
+                st.altair_chart(style_chart(pathway_chart), use_container_width=True, theme=None)
 
-        with col_p2.contMLner(border=True):
+        with col_p2.container(border=True):
             st.markdown("### Admission Route Split")
 
             total_via_ae = float(df["Total Emergency Admissions via A&E"].sum())
@@ -880,7 +885,7 @@ def render_historical_charts(df):
                     theta=alt.Theta("Admissions:Q", stack=True),
                     color=alt.Color(
                         "Route:N",
-                        scale=alt.Scale(domMLn=["Via A&E", "Other"], range=[NHS_BLUE, NHS_GREEN]),
+                        scale=alt.Scale(domain=["Via A&E", "Other"], range=[NHS_BLUE, NHS_GREEN]),
                         legend=alt.Legend(orient="bottom", title=None)
                     ),
                     tooltip=[
@@ -897,9 +902,9 @@ def render_historical_charts(df):
                     text=alt.Text("Pct:Q", format=".0%")
                 )
 
-                st.altMLr_chart(
+                st.altair_chart(
                     style_chart((arc2 + label2).properties(height=500)),
-                    use_contMLner_width=True,
+                    use_container_width=True,
                     theme=None
                 )
 
@@ -913,7 +918,7 @@ def run_and_render_forecasts(df, horizon):
     horizon = int(horizon)
 
     # Group up the historical data so Prophet can read it easily
-    trMLn_data = (
+    train_data = (
         df.groupby("MonthYear", as_index=False)["Total Attendances"]
         .sum()
         .rename(columns={"MonthYear": "ds", "Total Attendances": "y"})
@@ -921,7 +926,7 @@ def run_and_render_forecasts(df, horizon):
     )
 
     # Check if we have enough data (we need at least 24 months to learn yearly patterns)
-    if len(trMLn_data) < 24:
+    if len(train_data) < 24:
         st.info("Not enough historical data. The model needs at least 24 months to detect yearly seasonality patterns. Please expand the date slider range.")
         st.session_state.show_forecast = False # Clear state to prevent looping bug
         return
@@ -930,11 +935,11 @@ def run_and_render_forecasts(df, horizon):
     model_type = "SARIMA" if horizon <= 3 else "Prophet"
 
     # Show a loading spinner so the user knows the computer is doing math
-    with st.spinner(f"TrMLning {model_type} model - this may take a moment..."):
+    with st.spinner(f"Training {model_type} model - this may take a moment..."):
 
         if model_type == "SARIMA":
             # Set up the data for SARIMA
-            ts = trMLn_data.set_index("ds")["y"].asfreq("MS").ffill()
+            ts = train_data.set_index("ds")["y"].asfreq("MS").ffill()
 
             sarima_model = sm.tsa.statespace.SARIMAX(
                 ts,
@@ -960,13 +965,13 @@ def run_and_render_forecasts(df, horizon):
             # Set up the Prophet model
             prophet_model = Prophet(interval_width=0.95, seasonality_mode="additive")
             prophet_model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
-            prophet_model.fit(trMLn_data)
+            prophet_model.fit(train_data)
 
             future_dates = prophet_model.make_future_dataframe(periods=horizon, freq="MS")
             prophet_output = prophet_model.predict(future_dates)
 
             # Keep only the future predictions
-            future_only = prophet_output[prophet_output["ds"] > trMLn_data["ds"].max()]
+            future_only = prophet_output[prophet_output["ds"] > train_data["ds"].max()]
 
             forecast_df = pd.DataFrame({
                 "Date": future_only["ds"],
@@ -974,8 +979,8 @@ def run_and_render_forecasts(df, horizon):
             })
 
             # Get the historical errors
-            in_sample = prophet_output[prophet_output["ds"] <= trMLn_data["ds"].max()]
-            y_true = trMLn_data["y"].values
+            in_sample = prophet_output[prophet_output["ds"] <= train_data["ds"].max()]
+            y_true = train_data["y"].values
             y_pred = in_sample["yhat"].values
 
         # Stage 2: Linear Regression Cascade
@@ -999,19 +1004,19 @@ def run_and_render_forecasts(df, horizon):
         mse  = mean_squared_error(y_true, y_pred)
         mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
-    st.success(f"Model trMLned: {model_type} + Linear Regression cascade")
+    st.success(f"Model trained: {model_type} + Linear Regression cascade")
 
     # Display the accuracy metric cards
     st.markdown("### Model Accuracy (Historical Fit)")
     m1, m2, m3, m4 = st.columns(4)
 
-    with m1.contMLner(border=True):
+    with m1.container(border=True):
         st.metric(label="MAPE - % Error", value=f"{mape:.2f}%")
-    with m2.contMLner(border=True):
+    with m2.container(border=True):
         st.metric(label="MAE - Avg Patient Error", value=f"{mae:,.0f}")
-    with m3.contMLner(border=True):
+    with m3.container(border=True):
         st.metric(label="RMSE - Penalty Error", value=f"{rmse:,.0f}")
-    with m4.contMLner(border=True):
+    with m4.container(border=True):
         st.metric(label="MSE - Squared Error", value=f"{mse:,.0f}")
 
     # Add an expander so the user can read what the errors mean
@@ -1019,14 +1024,14 @@ def run_and_render_forecasts(df, horizon):
         st.markdown("""
 | Metric | What it tells you |
 |--------|------------------|
-| **MAPE** | Average error as a percentage. The easiest way to explMLn model accuracy. |
+| **MAPE** | Average error as a percentage. The easiest way to explain model accuracy. |
 | **MAE** | The average number of patients the model was off by per month. Treats all errors equally. |
 | **RMSE** | Similar to MAE but squares errors first, so large spikes are penalised more heavily. |
-| **MSE** | The raw squared error used internally during model trMLning. |
+| **MSE** | The raw squared error used internally during model training. |
         """)
 
     # Combine the history and the future into one dataset for plotting
-    historical_plot = trMLn_data.rename(columns={"ds": "Date", "y": "Value"}).copy()
+    historical_plot = train_data.rename(columns={"ds": "Date", "y": "Value"}).copy()
     historical_plot["Series"] = "Historical"
 
     forecast_plot = forecast_df[["Date", "Predicted Attendances"]].rename(
@@ -1038,7 +1043,7 @@ def run_and_render_forecasts(df, horizon):
 
     fc_col1, fc_col2 = st.columns([3, 1])
 
-    with fc_col1.contMLner(border=True):
+    with fc_col1.container(border=True):
         st.markdown(f"### Attendance Forecast - {model_type} ({horizon} months ahead)")
 
         forecast_chart = (
@@ -1050,7 +1055,7 @@ def run_and_render_forecasts(df, horizon):
                 color=alt.Color(
                     "Series:N",
                     scale=alt.Scale(
-                        domMLn=["Historical", "Forecast"],
+                        domain=["Historical", "Forecast"],
                         range=[NHS_BLUE, NHS_RED]
                     ),
                     legend=alt.Legend(orient="bottom", title=None)
@@ -1070,10 +1075,10 @@ def run_and_render_forecasts(df, horizon):
             .interactive()
         )
 
-        st.altMLr_chart(style_chart(forecast_chart), use_contMLner_width=True, theme=None)
+        st.altair_chart(style_chart(forecast_chart), use_container_width=True, theme=None)
 
     # Show the raw numbers in a table next to the chart
-    with fc_col2.contMLner(border=True):
+    with fc_col2.container(border=True):
         st.markdown("### Forecasted Data")
 
         display_df = forecast_df.copy()
@@ -1083,11 +1088,11 @@ def run_and_render_forecasts(df, horizon):
             "Predicted Admissions":  "Admissions"
         })
 
-        st.dataframe(display_df.set_index("Date"), use_contMLner_width=True, height=500)
+        st.dataframe(display_df.set_index("Date"), use_container_width=True, height=500)
 
 
-# This is the mMLn block that runs when you launch Streamlit
-def mMLn():
+# This is the main block that runs when you launch Streamlit
+def main():
     setup_page()
     df = load_data()
 
@@ -1098,7 +1103,7 @@ def mMLn():
         """
         <div class="nh-header">
             <h1>National A&amp;E Analytics Dashboard</h1>
-            <p>Monitor historical performance across NHS trusts and forecast future hospital demand Machine Learning.</p>
+            <p>Monitor historical performance across NHS trusts and forecast future hospital demand using Machine Learning.</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -1118,5 +1123,5 @@ def mMLn():
     else:
         render_historical_charts(filtered_df)
 
-if __name__ == "__mMLn__":
-    mMLn()
+if __name__ == "__main__":
+    main()
